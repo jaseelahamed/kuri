@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Mail, Phone, User, CheckCircle2, AlertCircle, Copy, Check, Key } from 'lucide-react';
+import { X, UserPlus, Mail, Phone, User, CheckCircle2, AlertCircle, Copy, Check, Key, MessageCircle } from 'lucide-react';
 import { translations } from '../translations';
 import { API_BASE_URL } from '../config';
 
@@ -14,6 +14,19 @@ export default function AddMemberModal({ groupId, groupName, lang = 'en', onClos
   const [copied, setCopied] = useState(false);
 
   const token = localStorage.getItem('kuri_token');
+
+  const handleShareWhatsApp = () => {
+    if (!result?.member) return;
+    const loginUrl = window.location.origin;
+    const text = `🎉 *കുറി ഗ്രൂപ്പിലേക്ക് സ്വാഗതം!*\n\nപ്രിയപ്പെട്ട ${result.member.name},\nനിങ്ങളെ "${groupName}" കുറി ഗ്രൂപ്പിലേക്ക് വിജയകരമായി ആഡ് ചെയ്തിരിക്കുന്നു.\n\n🔢 *നിങ്ങളുടെ കുറി നമ്പർ:* #${result.member.kuriNumber}\n📧 *ലോഗിൻ ഇമെയിൽ:* ${result.member.email}\n${result.generatedPassword ? `🔐 *പാസ്‌വേഡ്:* ${result.generatedPassword}\n` : ''}\n📲 *ലോഗിൻ ലിങ്ക്:* ${loginUrl}\n\nഈ വിവരങ്ങൾ ഉപയോഗിച്ച് ആപ്പിൽ കയറി നിങ്ങളുടെ അടവുകൾ സമർപ്പിക്കാനും നറുക്കെടുപ്പുകൾ കാണാനും സാധിക്കും.`;
+    
+    const cleanPhone = (result.member.phone || '').replace(/[^0-9]/g, '');
+    const url = cleanPhone.length >= 10
+      ? `https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    
+    window.open(url, '_blank');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -158,6 +171,15 @@ export default function AddMemberModal({ groupId, groupName, lang = 'en', onClos
                 </p>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>WhatsApp വഴി അയക്കുക (Share to WhatsApp)</span>
+            </button>
 
             <button
               onClick={() => {

@@ -26,11 +26,13 @@ import {
   Edit3,
   Search,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 
 import SpinningWheelModal from './components/SpinningWheelModal';
 import AddMemberModal from './components/AddMemberModal';
+import EditMemberModal from './components/EditMemberModal';
 import PaymentModal from './components/PaymentModal';
 import CreateGroupModal from './components/CreateGroupModal';
 import EditGroupModal from './components/EditGroupModal';
@@ -98,6 +100,7 @@ export default function App() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
 
   // Handle Login / Register
   const handleAuth = async (e) => {
@@ -209,6 +212,32 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteMember = async (member) => {
+    if (!window.confirm(
+      lang === 'ml'
+        ? `${member.name} (#${member.kuriNumber}) എന്ന മെമ്പറെ ഗ്രൂപ്പിൽ നിന്ന് ഒഴിവാക്കണമെന്ന് ഉറപ്പാണോ?`
+        : `Are you sure you want to delete ${member.name} (#${member.kuriNumber}) from this group?`
+    )) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/kuri/${selectedGroup._id}/members/${member._id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete member');
+
+      setGroupDetails((prev) => ({
+        ...prev,
+        members: prev.members.filter((m) => m._id !== member._id),
+      }));
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -846,7 +875,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="text-right flex-shrink-0">
+                          <div className="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
                             {m.hasWon ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[10px] font-bold">
                                 <Trophy className="w-3 h-3 text-amber-500" />
@@ -857,6 +886,27 @@ export default function App() {
                                 <Clock className="w-2.5 h-2.5 text-indigo-500" />
                                 <span>{t.statusEligible}</span>
                               </span>
+                            )}
+
+                            {isAdmin && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMember(m)}
+                                  className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/30 transition"
+                                  title={t.editMemberAction}
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMember(m)}
+                                  className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/30 transition"
+                                  title={t.deleteMemberAction}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -873,6 +923,7 @@ export default function App() {
                             <th className="px-5 py-3">{t.colEmail}</th>
                             <th className="px-5 py-3">{t.colPhone}</th>
                             <th className="px-5 py-3">{t.colStatus}</th>
+                            {isAdmin && <th className="px-5 py-3 text-right">{t.actionCol}</th>}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
@@ -899,6 +950,28 @@ export default function App() {
                                   </span>
                                 )}
                               </td>
+                              {isAdmin && (
+                                <td className="px-5 py-3.5 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingMember(m)}
+                                      className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/30 transition"
+                                      title={t.editMemberAction}
+                                    >
+                                      <Edit3 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteMember(m)}
+                                      className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/30 transition"
+                                      title={t.deleteMemberAction}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
@@ -1264,6 +1337,22 @@ export default function App() {
             setSelectedGroup(updatedGroup);
             fetchGroups();
             fetchGroupDetails();
+          }}
+        />
+      )}
+
+      {editingMember && selectedGroup && (
+        <EditMemberModal
+          member={editingMember}
+          groupId={selectedGroup._id}
+          lang={lang}
+          onClose={() => setEditingMember(null)}
+          onMemberUpdated={(updatedMember) => {
+            setGroupDetails((prev) => ({
+              ...prev,
+              members: prev.members.map((m) => (m._id === updatedMember._id ? updatedMember : m)),
+            }));
+            setEditingMember(null);
           }}
         />
       )}

@@ -3,6 +3,7 @@ import KuriGroup from '../models/KuriGroup.js';
 import KuriMember from '../models/KuriMember.js';
 import Draw from '../models/Draw.js';
 import User from '../models/User.js';
+import Payment from '../models/Payment.js';
 import { protect } from '../middleware/auth.js';
 import { sendMemberWelcomeEmail } from '../utils/mailer.js';
 
@@ -181,6 +182,104 @@ router.post('/:id/members', protect, async (req, res) => {
       isNewAccount,
       emailSent: emailResult.success,
       emailError: emailResult.error || emailResult.reason,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/kuri/:id/members/:memberId
+// @desc    Admin edits member details (name, phone, kuriNumber)
+router.put('/:id/members/:memberId', protect, async (req, res) => {
+  try {
+    const { name, phone, kuriNumber } = req.body;
+    const { id: groupId, memberId } = req.params;
+
+    const group = await KuriGroup.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'കുറി ഗ്രൂപ്പ് കണ്ടെത്താനായില്ല' });
+    }
+
+    // Check if requester is Admin
+    if (group.admin.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'ഗ്രൂപ്പ് അഡ്മിന് മാത്രമേ മെമ്പർ വിവരങ്ങൾ എഡിറ്റ് ചെയ്യാൻ അനുമതിയുള്ളൂ' });
+    }
+
+    const member = await KuriMember.findOne({ _id: memberId, groupId });
+    if (!member) {
+      return res.status(404).json({ message: 'മെമ്പറെ കണ്ടെത്താനായില്ല' });
+    }
+
+    // If changing kuriNumber, validate 3 digits and check uniqueness in this group
+    if (kuriNumber && kuriNumber !== member.kuriNumber) {
+      const trimmedNo = String(kuriNumber).trim();
+      if (!/^[0-9]{3}$/.test(trimmedNo)) {
+        return res.status(400).json({ message: 'കുറി നമ്പർ 3 അക്കങ്ങൾ (100-999) മാത്രമായിരിക്കണം' });
+      }
+
+      const duplicate = await KuriMember.findOne({
+        groupId,
+        kuriNumber: trimmedNo,
+        _id: { $ne: memberId },
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: `കുറി നമ്പർ #${trimmedNo} ഇതിനകം മറ്റൊരു മെമ്പർക്ക് നൽകിയിട്ടുണ്ട്` });
+      }
+
+      member.kuriNumber = trimmedNo;
+    }
+
+    if (name) member.name = name.trim();
+    if (phone !== undefined) member.phone = phone.trim();
+
+    await member.save();
+
+    res.json({
+      message: 'മെമ്പർ വിവരങ്ങൾ വിജയകരമായി പുതുക്കി',
+      member,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/kuri/:id/members/:memberId
+// @desc    Admin deletes a member from the group
+router.delete('/:id/members/:memberId', protect, async (req, res) => {
+  try {
+    const { id: groupId, memberId } = req.params;
+
+    const group = await KuriGroup.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'കുറി ഗ്രൂപ്പ് കണ്ടെത്താനായില്ല' });
+    }
+
+    // Check if requester is Admin
+    if (group.admin.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'ഗ്രൂപ്പ് അഡ്മിന് മാത്രമേ മെമ്പറെ ഡിലീറ്റ് ചെയ്യാൻ അനുമതിയുള്ളൂ' });
+    }
+
+    const member = await KuriMember.findOne({ _id: memberId, groupId });
+    if (!member) {
+      return res.status(404).json({ message: 'മെമ്പറെ കണ്ടെത്താനായില്ല' });
+    }
+
+    // If member has already won a draw, prevent deleting to keep draw records intact
+    if (member.hasWon) {
+      return res.status(400).json({
+        message: 'നറുക്കെടുപ്പിൽ വിജയിച്ച മെമ്പറെ ഡിലീറ്റ് ചെയ്യാൻ സാധിക്കില്ല (Winner record exists)',
+      });
+    }
+
+    // Delete associated payments for this member in this group
+    await Payment.deleteMany({ groupId, memberId });
+
+    // Remove member
+    await KuriMember.deleteOne({ _id: memberId, groupId });
+
+    res.json({
+      message: `മെമ്പർ ${member.name} (#${member.kuriNumber}) വിജയകരമായി ഡിലീറ്റ് ചെയ്തു`,
+      deletedMemberId: memberId,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

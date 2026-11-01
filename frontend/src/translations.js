@@ -129,6 +129,19 @@ export const translations = {
     loginCredentialsDesc: 'Account created! The 3-digit Kuri number and this login password have been emailed to the member.',
     existingAccountNotice: 'Member already has an account. Group added to their dashboard and email confirmation sent.',
 
+    // Edit & Delete Member
+    editMemberTitle: 'Edit Member Details',
+    editMemberSubtitle: 'Update name, phone, or custom 3-digit Kuri number',
+    kuriNumberLabel: 'Kuri Number (3 Digits: 100-999) *',
+    saveMemberChanges: 'Save Changes',
+    savingMember: 'Saving...',
+    deleteMemberConfirmTitle: 'Delete Member?',
+    deleteMemberConfirmDesc: 'Are you sure you want to delete this member? All pending payment records for this member in this group will also be deleted.',
+    deleteMemberAction: 'Delete Member',
+    deletingMember: 'Deleting...',
+    editMemberAction: 'Edit',
+    actionCol: 'Actions',
+
     // Payment Modal
     paymentModalTitle: 'Submit Monthly Payment',
     paymentMonthLabel: 'Installment Month',
@@ -299,6 +312,19 @@ export const translations = {
     copied: 'കോപ്പി ചെയ്തു!',
     loginCredentialsDesc: 'അക്കൗണ്ട് നിർമ്മിച്ചു! 3-അക്ക കുറി നമ്പറും ഈ ലോഗിൻ പാസ്‌വേഡും മെമ്പറുടെ ഇമെയിലിലേക്ക് അയച്ചിട്ടുണ്ട്.',
     existingAccountNotice: 'മെമ്പർക്ക് നിലവിൽ അക്കൗണ്ട് ഉണ്ട്. ഗ്രൂപ്പ് അവരുടെ ഡാഷ്‌ബോർഡിൽ ആഡ് ചെയ്യുകയും ഇമെയിൽ അയക്കുകയും ചെയ്തു.',
+
+    // Edit & Delete Member
+    editMemberTitle: 'മെമ്പർ വിവരങ്ങൾ മാറ്റുക',
+    editMemberSubtitle: 'പേര്, ഫോൺ, അല്ലെങ്കിൽ 3-അക്ക കുറി നമ്പർ മാറ്റുക',
+    kuriNumberLabel: 'കുറി നമ്പർ (3 അക്കങ്ങൾ: 100-999) *',
+    saveMemberChanges: 'മാറ്റങ്ങൾ സേവ് ചെയ്യുക',
+    savingMember: 'സേവ് ചെയ്യുന്നു...',
+    deleteMemberConfirmTitle: 'മെമ്പറെ ഒഴിവാക്കണോ?',
+    deleteMemberConfirmDesc: 'ഈ മെമ്പറെ ഗ്രൂപ്പിൽ നിന്ന് ഒഴിവാക്കണമെന്ന് ഉറപ്പാണോ? ഇവരുടെ പെയ്മെന്റ് വിവരങ്ങളും നീക്കം ചെയ്യപ്പെടും.',
+    deleteMemberAction: 'ഡിലീറ്റ് ചെയ്യുക',
+    deletingMember: 'ഡിലീറ്റ് ചെയ്യുന്നു...',
+    editMemberAction: 'എഡിറ്റ്',
+    actionCol: 'ഓപ്ഷനുകൾ',
 
     // Payment Modal
     paymentModalTitle: 'പെയ്മെന്റ് റിക്വസ്റ്റ് സമർപ്പിക്കുക',

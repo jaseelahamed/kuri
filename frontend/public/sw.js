@@ -1,9 +1,11 @@
-const CACHE_NAME = 'kuri-app-v3';
+const CACHE_NAME = 'kuri-app-v4';
 
 // Essential static offline fallback
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
+  '/favicon.ico',
+  '/favicon.png',
   '/icon-192.png',
   '/icon-512.png',
   '/apple-touch-icon.png'

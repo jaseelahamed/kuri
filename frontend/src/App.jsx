@@ -880,15 +880,21 @@ export default function App() {
                           </div>
 
                           <div className="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
-                            {m.hasWon ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[10px] font-bold">
-                                <Trophy className="w-3 h-3 text-amber-500" />
-                                <span>{t.statusWon} #{m.wonMonth})</span>
-                              </span>
+                            {isAdmin ? (
+                              m.hasWon ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[10px] font-bold">
+                                  <Trophy className="w-3 h-3 text-amber-500" />
+                                  <span>{t.statusWon} #{m.wonMonth})</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-medium">
+                                  <Clock className="w-2.5 h-2.5 text-indigo-500" />
+                                  <span>{t.statusEligible}</span>
+                                </span>
+                              )
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-medium">
-                                <Clock className="w-2.5 h-2.5 text-indigo-500" />
-                                <span>{t.statusEligible}</span>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-medium">
+                                <span>{t.memberBadge}</span>
                               </span>
                             )}
 
@@ -942,15 +948,22 @@ export default function App() {
                               <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 text-xs">{m.email}</td>
                               <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs">{m.phone || '-'}</td>
                               <td className="px-5 py-3.5">
-                                {m.hasWon ? (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold">
-                                    <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                                    <span>{t.statusWon} #{m.wonMonth})</span>
-                                  </span>
+                                {isAdmin ? (
+                                  m.hasWon ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold">
+                                      <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>{t.statusWon} #{m.wonMonth})</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs">
+                                      <Clock className="w-3 h-3 text-indigo-500" />
+                                      <span>{t.statusEligible}</span>
+                                    </span>
+                                  )
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs">
-                                    <Clock className="w-3 h-3 text-indigo-500" />
-                                    <span>{t.statusEligible}</span>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100/70 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+                                    <CheckCircle className="w-3 h-3 text-emerald-500" />
+                                    <span>{t.statusActive}</span>
                                   </span>
                                 )}
                               </td>

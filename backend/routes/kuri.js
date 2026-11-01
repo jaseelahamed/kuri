@@ -90,12 +90,26 @@ router.get('/:id', protect, async (req, res) => {
       return res.status(404).json({ message: 'കുറി ഗ്രൂപ്പ് കണ്ടെത്താനായില്ല' });
     }
 
-    const members = await KuriMember.find({ groupId: group._id }).sort({ kuriNumber: 1 });
-    const draws = await Draw.find({ groupId: group._id })
-      .populate('winnerMemberId', 'name email phone kuriNumber')
-      .sort({ month: -1 });
-
     const isAdmin = group.admin._id.toString() === req.user._id.toString();
+
+    let members = await KuriMember.find({ groupId: group._id }).sort({ kuriNumber: 1 });
+    let draws = [];
+
+    if (isAdmin) {
+      // Admin sees full draws and winner status
+      draws = await Draw.find({ groupId: group._id })
+        .populate('winnerMemberId', 'name email phone kuriNumber')
+        .sort({ month: -1 });
+    } else {
+      // Confidential: hide winner information and draws tab from regular members
+      draws = [];
+      members = members.map((m) => {
+        const obj = m.toObject();
+        delete obj.hasWon;
+        delete obj.wonMonth;
+        return obj;
+      });
+    }
 
     res.json({
       group,

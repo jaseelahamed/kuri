@@ -766,7 +766,9 @@ export default function App() {
                   </div>
                 </div>
                 <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-                  {groupDetails.draws?.length || 0} {t.tabDraws}
+                  {isAdmin
+                    ? `${groupDetails.draws?.length || 0} ${t.tabDraws}`
+                    : `${groupDetails.members?.length || 0} ${t.tabMembers}`}
                 </div>
               </div>
             </div>
@@ -800,16 +802,18 @@ export default function App() {
                     </span>
                   )}
                 </button>
-                <button
-                  onClick={() => setActiveTab('draws')}
-                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
-                    activeTab === 'draws'
-                      ? 'bg-indigo-600 text-white shadow'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {t.tabDraws} ({groupDetails.draws?.length || 0})
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setActiveTab('draws')}
+                    className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                      activeTab === 'draws'
+                        ? 'bg-indigo-600 text-white shadow'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {t.tabDraws} ({groupDetails.draws?.length || 0})
+                  </button>
+                )}
               </div>
 
               {/* Action Buttons (Touch Friendly) */}

@@ -18,6 +18,11 @@ router.get('/eligible/:groupId', protect, async (req, res) => {
       return res.status(404).json({ message: 'കുറി ഗ്രൂപ്പ് കണ്ടെത്താനായില്ല' });
     }
 
+    // Verify Admin rights - members should not see draw details
+    if (group.admin.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'അഡ്മിന് മാത്രമേ നറുക്കെടുപ്പ് വിവരങ്ങൾ കാണാൻ അനുമതിയുള്ളൂ' });
+    }
+
     // Only members with hasWon: false
     const eligibleMembers = await KuriMember.find({
       groupId,

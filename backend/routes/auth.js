@@ -74,4 +74,16 @@ router.get('/me', protect, async (req, res) => {
   res.json(req.user);
 });
 
+// @route   GET /api/auth/verify-smtp
+// @desc    Diagnostic test for Gmail SMTP credentials
+router.get('/verify-smtp', async (req, res) => {
+  try {
+    const { verifySmtpConnection } = await import('../utils/mailer.js');
+    const result = await verifySmtpConnection();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -180,6 +180,7 @@ router.post('/:id/members', protect, async (req, res) => {
       generatedPassword,
       isNewAccount,
       emailSent: emailResult.success,
+      emailError: emailResult.error || emailResult.reason,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

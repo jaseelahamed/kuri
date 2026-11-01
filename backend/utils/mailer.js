@@ -2,15 +2,54 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Create reusable transporter object using Gmail service
-const getTransporter = () => {
+// Create reusable transporter object using direct SSL (Port 465) for cloud compatibility
+export const getTransporter = () => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '';
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS?.replace(/\s+/g, ''), // Strip any spaces
+      user,
+      pass,
     },
+    connectionTimeout: 10000,
   });
+};
+
+/**
+ * Verify SMTP connection diagnostic
+ */
+export const verifySmtpConnection = async () => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  
+  if (!user || user === 'your_email@gmail.com' || !pass) {
+    return {
+      connected: false,
+      reason: 'EMAIL_USER or EMAIL_PASS is not configured in Render environment variables',
+      configuredEmail: user || 'NOT_SET',
+      hasPass: !!pass,
+    };
+  }
+
+  try {
+    const transporter = getTransporter();
+    await transporter.verify();
+    return {
+      connected: true,
+      message: 'Gmail SMTP authenticated successfully!',
+      user,
+    };
+  } catch (error) {
+    return {
+      connected: false,
+      error: error.message,
+      configuredEmail: user,
+      hasPass: !!pass,
+    };
+  }
 };
 
 /**

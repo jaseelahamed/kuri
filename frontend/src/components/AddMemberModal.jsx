@@ -140,12 +140,24 @@ export default function AddMemberModal({ groupId, groupName, lang = 'en', onClos
               </div>
             )}
 
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-center gap-2">
-              <Mail className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">
-                {t.welcomeEmailNotice} {result.member.email}
-              </span>
-            </div>
+            {result.emailSent ? (
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-center gap-2">
+                <Mail className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">
+                  {t.welcomeEmailNotice} {result.member.email}
+                </span>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs text-left">
+                <div className="font-bold flex items-center gap-1.5 mb-1 text-amber-700 dark:text-amber-300">
+                  <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  <span>ഇമെയിൽ പോയില്ല (Email Not Delivered)</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-700/90 dark:text-amber-300/80">
+                  {result.emailError || 'Render Dashboard-ൽ EMAIL_USER, EMAIL_PASS എന്നിവ കോൺഫിഗർ ചെയ്യുക.'}
+                </p>
+              </div>
+            )}
 
             <button
               onClick={() => {

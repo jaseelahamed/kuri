@@ -1197,8 +1197,8 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB CONTENT 3: Draw History (Mobile Responsive Cards & Desktop Table) */}
-            {activeTab === 'draws' && (
+            {/* TAB CONTENT 3: Draw History (Admin Only) */}
+            {activeTab === 'draws' && isAdmin && (
               <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
                 <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t.drawsTitle}</h3>

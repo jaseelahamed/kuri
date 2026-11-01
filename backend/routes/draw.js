@@ -2,13 +2,14 @@ import express from 'express';
 import KuriGroup from '../models/KuriGroup.js';
 import KuriMember from '../models/KuriMember.js';
 import Draw from '../models/Draw.js';
+import Payment from '../models/Payment.js';
 import { protect } from '../middleware/auth.js';
 import { sendWinnerNotificationEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 
 // @route   GET /api/draw/eligible/:groupId
-// @desc    Get all eligible members for draw (who haven't won yet)
+// @desc    Get all eligible members for draw (who haven't won yet) & check all member payments approval status
 router.get('/eligible/:groupId', protect, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -23,13 +24,35 @@ router.get('/eligible/:groupId', protect, async (req, res) => {
       return res.status(403).json({ message: 'അഡ്മിന് മാത്രമേ നറുക്കെടുപ്പ് വിവരങ്ങൾ കാണാൻ അനുമതിയുള്ളൂ' });
     }
 
+    // All group members
+    const allMembers = await KuriMember.find({ groupId }).select('name email phone kuriNumber hasWon');
+
     // Only members with hasWon: false
-    const eligibleMembers = await KuriMember.find({
+    const eligibleMembers = allMembers.filter((m) => !m.hasWon);
+
+    // Verify payments for the current month
+    const targetMonth = group.currentMonth;
+    const approvedPayments = await Payment.find({
       groupId,
-      hasWon: false,
-    }).select('name email phone kuriNumber hasWon');
+      month: targetMonth,
+      status: 'APPROVED',
+    });
+
+    const approvedMemberIdSet = new Set(approvedPayments.map((p) => p.memberId.toString()));
+    const unpaidMembers = allMembers.filter((m) => !approvedMemberIdSet.has(m._id.toString()));
+    const allPaidAndApproved = allMembers.length > 0 && unpaidMembers.length === 0;
 
     res.json({
+      totalMembers: allMembers.length,
+      approvedCount: approvedPayments.length,
+      unpaidCount: unpaidMembers.length,
+      allPaidAndApproved,
+      unpaidMembers: unpaidMembers.map((m) => ({
+        _id: m._id,
+        name: m.name,
+        kuriNumber: m.kuriNumber,
+        phone: m.phone,
+      })),
       totalEligible: eligibleMembers.length,
       currentMonth: group.currentMonth,
       eligibleMembers,
@@ -65,11 +88,38 @@ router.post('/execute', protect, async (req, res) => {
       return res.status(400).json({ message: `മാസം #${month} ലെ നറുക്കെടുപ്പ് ഇതിനകം കഴിഞ്ഞിരിക്കുന്നു` });
     }
 
-    // Find all eligible members (hasWon === false)
-    const eligibleMembers = await KuriMember.find({
+    // Strict validation: Verify that ALL members in the group have an APPROVED payment for this month!
+    const allMembers = await KuriMember.find({ groupId });
+    if (allMembers.length === 0) {
+      return res.status(400).json({ message: 'ഈ ഗ്രൂപ്പിൽ മെമ്പർമാർ ആരുമില്ല' });
+    }
+
+    const approvedPayments = await Payment.find({
       groupId,
-      hasWon: false,
+      month: Number(month),
+      status: 'APPROVED',
     });
+
+    const approvedMemberIdSet = new Set(approvedPayments.map((p) => p.memberId.toString()));
+    const unpaidMembers = allMembers.filter((m) => !approvedMemberIdSet.has(m._id.toString()));
+
+    if (unpaidMembers.length > 0) {
+      const unpaidList = unpaidMembers.map((m) => `${m.name} (#${m.kuriNumber})`).join(', ');
+      return res.status(400).json({
+        message: `മാസം #${month} ലെ നറുക്കെടുപ്പ് നടത്താൻ സാധ്യമല്ല! എല്ലാ മെമ്പർമാരും ഈ മാസത്തെ തുക നൽകുകയും അഡ്മിൻ അത് അംഗീകരിക്കുകയും (Approved) ചെയ്യണം. പണം നൽകാത്ത / അപ്രൂവ് ചെയ്യാത്ത അംഗങ്ങൾ (${unpaidMembers.length}): ${unpaidList}`,
+        allPaidAndApproved: false,
+        unpaidCount: unpaidMembers.length,
+        unpaidMembers: unpaidMembers.map((m) => ({
+          _id: m._id,
+          name: m.name,
+          kuriNumber: m.kuriNumber,
+          phone: m.phone,
+        })),
+      });
+    }
+
+    // Find all eligible members (hasWon === false)
+    const eligibleMembers = allMembers.filter((m) => !m.hasWon);
 
     if (eligibleMembers.length === 0) {
       return res.status(400).json({ message: 'നറുക്കെടുപ്പിനായി യോഗ്യരായ മെമ്പർമാർ ആരുമില്ല' });
@@ -120,8 +170,8 @@ router.post('/execute', protect, async (req, res) => {
 
     res.status(200).json({
       message: emailResult.success
-        ? `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} (${winner.name}) വിജയിച്ചിരിക്കുന്നു. ഇമെയിൽ അയച്ചു.`
-        : `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} (${winner.name}) വിജയിച്ചിരിക്കുന്നു. (ഇമെയിൽ അയക്കാൻ കഴിഞ്ഞില്ല - WhatsApp വഴി സന്ദേശം അയക്കുക).`,
+        ? `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} വിജയിച്ചിരിക്കുന്നു. ഇമെയിൽ അയച്ചു.`
+        : `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} വിജയിച്ചിരിക്കുന്നു. (ഇമെയിൽ അയക്കാൻ കഴിഞ്ഞില്ല - WhatsApp വഴി സന്ദേശം അയക്കുക).`,
       winner: {
         _id: winner._id,
         name: winner.name,

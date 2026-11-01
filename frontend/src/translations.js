@@ -50,6 +50,10 @@ export const translations = {
     noGroupsTitle: 'You are not in any Kuri group yet!',
     noGroupsDesc: 'Create a new Kuri group as Admin or ask your group admin to invite you via your email address.',
     createGroupAction: 'Start a New Kuri Group',
+    loadingGroups: 'Loading your Kuri groups...',
+    loadingGroupDetails: 'Loading group details, members & payments...',
+    loadingPayments: 'Loading payment records...',
+    refreshData: 'Refresh',
 
     // Summary Cards
     totalAmount: 'Total Kuri Amount',
@@ -211,6 +215,24 @@ export const translations = {
     shareWinnerWhatsApp: 'Send Winner Notification via WhatsApp',
     shareWinnerWhatsAppGroup: 'Share to Kuri Group',
     doneBtn: 'Done',
+
+    // Payment Pre-flight Verification for Draw
+    paymentVerificationTitle: 'Monthly Payment Verification',
+    allPaymentsApprovedBadge: 'All Payments Approved',
+    allPaymentsApprovedDesc: 'All members have paid and their payments are approved for this month. You are ready to spin!',
+    pendingPaymentsBadge: 'Draw Blocked: Payments Incomplete',
+    pendingPaymentsDesc: 'All members must complete and get their monthly dues approved before spinning the wheel.',
+    unpaidCountLabel: 'Members Pending Approval / Unpaid',
+    remindWhatsAppBtn: 'Remind on WhatsApp',
+
+    // Video Recording of Spin Draw
+    recordedVideoTitle: 'Spin Wheel Video Recording',
+    recordedVideoDesc: 'A video recording of the lucky draw wheel spinning and winner announcement is ready.',
+    downloadVideoBtn: 'Download Video',
+    shareVideoWhatsAppBtn: 'Share Video on WhatsApp',
+    recordingState: 'Recording Video...',
+    videoDownloadedNotice: 'Video downloaded! You can attach it in your WhatsApp chat.',
+    winningNumberOnlyNotice: 'For member privacy, only the winning 3-digit Kuri number is displayed in the video and announcement.',
   },
   ml: {
     // Brand & Header
@@ -263,6 +285,10 @@ export const translations = {
     noGroupsTitle: 'നിങ്ങൾ നിലവിൽ ഒരു കുറി ഗ്രൂപ്പിലും അംഗമല്ല!',
     noGroupsDesc: 'ഒരു പുതിയ ചിട്ടി/കുറി ഗ്രൂപ്പ് ആരംഭിക്കുകയോ ഗ്രൂപ്പ് അഡ്മിനോട് നിങ്ങളുടെ ഇമെയിൽ ചേർക്കാൻ ആവശ്യപ്പെടുകയോ ചെയ്യുക.',
     createGroupAction: 'പുതിയ കുറി ഗ്രൂപ്പ് ഉണ്ടാക്കുക',
+    loadingGroups: 'കുറി ഗ്രൂപ്പുകൾ ലോഡ് ചെയ്യുന്നു...',
+    loadingGroupDetails: 'കുറി വിവരങ്ങളും മെമ്പർമാരെയും ലോഡ് ചെയ്യുന്നു...',
+    loadingPayments: 'പെയ്മെന്റ് വിവരങ്ങൾ ശേഖരിക്കുന്നു...',
+    refreshData: 'റീഫ്രഷ് ചെയ്യുക',
 
     // Summary Cards
     totalAmount: 'ആകെ കുറി തുക',
@@ -424,5 +450,24 @@ export const translations = {
     shareWinnerWhatsApp: 'WhatsApp വഴി വിജയിക്ക് സന്ദേശം അയക്കുക',
     shareWinnerWhatsAppGroup: 'ഗ്രൂപ്പിലേക്ക് ഷെയർ ചെയ്യുക',
     doneBtn: 'പൂർത്തിയായി',
+
+    // Payment Pre-flight Verification for Draw
+    paymentVerificationTitle: 'പെയ്മെന്റ് സ്ഥിരീകരണം',
+    allPaymentsApprovedBadge: 'എല്ലാ പെയ്മെന്റുകളും അപ്രൂവ് ചെയ്തു',
+    allPaymentsApprovedDesc: 'ഈ മാസത്തെ എല്ലാ മെമ്പർമാരുടെയും പെയ്മെന്റ് അപ്രൂവ് ചെയ്തു കഴിഞ്ഞു. നറുക്കെടുപ്പ് നടത്താം!',
+    pendingPaymentsBadge: 'നറുക്കെടുപ്പ് തടഞ്ഞിരിക്കുന്നു: പെയ്മെന്റുകൾ പൂർത്തിയായിട്ടില്ല',
+    pendingPaymentsDesc: 'എല്ലാ മെമ്പർമാരും ഈ മാസത്തെ കുറി അടയ്ക്കുകയും അഡ്മിൻ അത് അപ്രൂവ് ചെയ്യുകയും ചെയ്ത ശേഷം മാത്രമേ സ്പിൻ ചെയ്യാൻ കഴിയൂ.',
+    unpaidCountLabel: 'പണം നൽകാത്തവർ / അപ്രൂവൽ ലഭിക്കാത്തവർ',
+    spinDisabledReason: 'എല്ലാ പെയ്മെന്റുകളും അപ്രൂവ് ചെയ്ത ശേഷം മാത്രമേ സ്പിൻ ചെയ്യാൻ സാധിക്കൂ',
+    remindWhatsAppBtn: 'WhatsApp വഴി ഓർമ്മിപ്പിക്കുക',
+
+    // Video Recording of Spin Draw
+    recordedVideoTitle: 'നറുക്കെടുപ്പ് വീഡിയോ റെക്കോർഡിംഗ്',
+    recordedVideoDesc: 'സ്പിൻ വീൽ കറങ്ങുന്നതും വിജയിച്ച കുറി നമ്പർ പ്രഖ്യാപിക്കുന്നതുമായ വീഡിയോ റെക്കോർഡ് ചെയ്തിട്ടുണ്ട്.',
+    downloadVideoBtn: 'വീഡിയോ ഡൗൺലോഡ് ചെയ്യുക',
+    shareVideoWhatsAppBtn: 'വീഡിയോ WhatsApp വഴി ഷെയർ ചെയ്യുക',
+    recordingState: 'വീഡിയോ റെക്കോർഡ് ചെയ്യുന്നു...',
+    videoDownloadedNotice: 'വീഡിയോ ഡൗൺലോഡ് ചെയ്തു! WhatsApp ചാറ്റിൽ ഈ വീഡിയോ അറ്റാച്ച് ചെയ്ത് അയക്കാം.',
+    winningNumberOnlyNotice: 'മെമ്പർമാരുടെ സ്വകാര്യതയ്ക്കായി വിജയിച്ച 3 അക്ക കുറി നമ്പർ മാത്രമേ വീഡിയോയിലും പ്രഖ്യാപനത്തിലും കാണിക്കൂ.',
   },
 };

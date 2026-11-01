@@ -30,7 +30,9 @@ import {
   Trash2,
   MessageCircle,
   Receipt,
-  Filter
+  Filter,
+  Loader2,
+  RotateCw
 } from 'lucide-react';
 
 import SpinningWheelModal from './components/SpinningWheelModal';
@@ -89,6 +91,7 @@ export default function App() {
 
   // Groups list & Selection state
   const [groupsData, setGroupsData] = useState({ adminGroups: [], memberGroups: [] });
+  const [loadingGroups, setLoadingGroups] = useState(!!localStorage.getItem('kuri_token'));
   const [selectedGroup, setSelectedGroup] = useState(null); // null = List view, object = Details view
   const [groupFilter, setGroupFilter] = useState('ALL'); // 'ALL' | 'ADMIN' | 'MEMBER'
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,6 +160,7 @@ export default function App() {
   // Fetch User's Groups
   const fetchGroups = async () => {
     if (!token) return;
+    setLoadingGroups(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/kuri`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -167,6 +171,8 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to load groups:', err);
+    } finally {
+      setLoadingGroups(false);
     }
   };
 
@@ -543,16 +549,27 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="text"
-                  placeholder={t.searchKurisPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-sm placeholder-slate-400"
-                />
+              {/* Search Bar & Refresh */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder={t.searchKurisPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-sm placeholder-slate-400"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchGroups()}
+                  disabled={loadingGroups}
+                  className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition shadow-sm disabled:opacity-50"
+                  title={t.refreshData}
+                >
+                  <RotateCw className={`w-4 h-4 ${loadingGroups ? 'animate-spin text-indigo-500' : ''}`} />
+                </button>
               </div>
             </div>
 
@@ -591,7 +608,12 @@ export default function App() {
             </div>
 
             {/* Groups Grid / List */}
-            {displayedGroups.length === 0 ? (
+            {loadingGroups ? (
+              <div className="py-20 text-center glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <h3 className="text-base font-bold text-slate-800 dark:text-white">{t.loadingGroups}</h3>
+              </div>
+            ) : displayedGroups.length === 0 ? (
               <div className="py-20 text-center glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800">
                 <Trophy className="w-14 h-14 text-indigo-500 mx-auto mb-3 opacity-70" />
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t.noGroupsTitle}</h3>
@@ -615,7 +637,11 @@ export default function App() {
                   return (
                     <div
                       key={grp._id}
-                      onClick={() => setSelectedGroup(grp)}
+                      onClick={() => {
+                        setGroupDetails({ members: [], draws: [], isAdmin: false });
+                        setPayments([]);
+                        setSelectedGroup(grp);
+                      }}
                       className="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col justify-between group active:scale-[0.99]"
                     >
                       <div>
@@ -748,16 +774,29 @@ export default function App() {
                 </h2>
               </div>
 
-              {/* Admin Edit Group Button */}
-              {isAdmin && (
+              {/* Header Action Buttons */}
+              <div className="self-start sm:self-auto flex items-center gap-2">
                 <button
-                  onClick={() => setShowEditGroupModal(true)}
-                  className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-500/30 transition"
+                  type="button"
+                  onClick={() => fetchGroupDetails()}
+                  disabled={loadingGroup}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-indigo-600 dark:hover:text-indigo-400 transition shadow-sm disabled:opacity-60"
+                  title={t.refreshData}
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>{t.editKuri}</span>
+                  <RotateCw className={`w-3.5 h-3.5 text-indigo-500 ${loadingGroup ? 'animate-spin' : ''}`} />
+                  <span>{t.refreshData}</span>
                 </button>
-              )}
+
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowEditGroupModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-500/30 transition shadow-sm"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>{t.editKuri}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Summary Cards */}
@@ -913,9 +952,22 @@ export default function App() {
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t.membersListTitle}</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t.membersListSubtitle}</p>
                   </div>
+                  {loadingGroup && (
+                    <div className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>{t.loadingGroupDetails}</span>
+                    </div>
+                  )}
                 </div>
 
-                {groupDetails.members?.length === 0 ? (
+                {loadingGroup && (!groupDetails.members || groupDetails.members.length === 0) ? (
+                  <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      {t.loadingGroupDetails}
+                    </p>
+                  </div>
+                ) : groupDetails.members?.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">
                     {t.noMembersYet}
                   </div>
@@ -1114,6 +1166,12 @@ export default function App() {
                       <div className="flex items-center gap-2">
                         <Receipt className="w-5 h-5 text-indigo-500" />
                         <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.paymentsTitle}</h3>
+                        {loadingGroup && (
+                          <div className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold ml-2 animate-pulse">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>{t.loadingPayments}</span>
+                          </div>
+                        )}
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {isAdmin ? t.paymentsAdminSubtitle : t.paymentsMemberSubtitle}
@@ -1241,6 +1299,17 @@ export default function App() {
                     }
                     return true;
                   });
+
+                  if (loadingGroup && (!payments || payments.length === 0)) {
+                    return (
+                      <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
+                        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                          {t.loadingPayments}
+                        </p>
+                      </div>
+                    );
+                  }
 
                   if (filtered.length === 0) {
                     return (
@@ -1508,11 +1577,24 @@ export default function App() {
             {/* TAB CONTENT 3: Draw History (Admin Only) */}
             {activeTab === 'draws' && isAdmin && (
               <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t.drawsTitle}</h3>
+                  {loadingGroup && (
+                    <div className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>{t.loadingGroupDetails}</span>
+                    </div>
+                  )}
                 </div>
 
-                {groupDetails.draws?.length === 0 ? (
+                {loadingGroup && (!groupDetails.draws || groupDetails.draws.length === 0) ? (
+                  <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      {t.loadingGroupDetails}
+                    </p>
+                  </div>
+                ) : groupDetails.draws?.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">
                     {t.noDrawsYet}
                   </div>

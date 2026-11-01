@@ -127,9 +127,12 @@ router.put('/:id/approve', protect, async (req, res) => {
       return res.status(403).json({ message: 'അഡ്മിന് മാത്രമേ പെയ്മെന്റ് അപ്രൂവ് ചെയ്യാൻ സാധിക്കൂ' });
     }
 
+    const { remarks } = req.body || {};
+
     payment.status = 'APPROVED';
     payment.approvedAt = new Date();
     payment.approvedBy = req.user._id;
+    if (remarks) payment.remarks = remarks;
     await payment.save();
 
     res.json({
@@ -145,7 +148,7 @@ router.put('/:id/approve', protect, async (req, res) => {
 // @desc    Admin rejects a payment request
 router.put('/:id/reject', protect, async (req, res) => {
   try {
-    const { remarks } = req.body;
+    const { remarks } = req.body || {};
     const payment = await Payment.findById(req.params.id);
     if (!payment) {
       return res.status(404).json({ message: 'പെയ്മെന്റ് കണ്ടെത്താനായില്ല' });
@@ -157,6 +160,8 @@ router.put('/:id/reject', protect, async (req, res) => {
     }
 
     payment.status = 'REJECTED';
+    payment.approvedAt = new Date();
+    payment.approvedBy = req.user._id;
     payment.remarks = remarks || 'അഡ്മിൻ നിരസിച്ചു';
     await payment.save();
 

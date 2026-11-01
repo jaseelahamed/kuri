@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { X, Trophy, Sparkles, AlertCircle, Mail, RotateCw } from 'lucide-react';
+import { X, Trophy, Sparkles, AlertCircle, Mail, RotateCw, MessageCircle, Share2, CheckCircle2 } from 'lucide-react';
 import { translations } from '../translations';
 import { API_BASE_URL } from '../config';
 
@@ -26,6 +26,7 @@ export default function SpinningWheelModal({
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const [error, setError] = useState('');
 
   const controls = useAnimation();
@@ -124,6 +125,7 @@ export default function SpinningWheelModal({
       // 4. Spin complete: announce winner & celebrate
       setWinner(backendWinner);
       setEmailSent(data.emailSent);
+      setEmailError(data.emailError || '');
       fireConfetti();
       if (onDrawComplete) onDrawComplete(data);
     } catch (err) {
@@ -131,6 +133,36 @@ export default function SpinningWheelModal({
     } finally {
       setSpinning(false);
     }
+  };
+
+  const getWinnerShareText = () => {
+    if (!winner) return '';
+    const loginUrl = window.location.origin;
+    return `🎉 *വിജയി പ്രഖ്യാപനം - കുറി നറുക്കെടുപ്പ്* 🏆\n\n` +
+      `പ്രിയപ്പെട്ട *${winner.name}*,\n` +
+      `*"${groupName}"* കുറി ഗ്രൂപ്പിന്റെ *മാസം #${currentMonth}* ലെ നറുക്കെടുപ്പിൽ താങ്കളുടെ കുറി നമ്പർ വിജയിച്ചിരിക്കുന്നു!\n\n` +
+      `🔢 *കുറി നമ്പർ:* #${winner.kuriNumber}\n` +
+      `💰 *സമ്മാനത്തുക:* ₹${totalAmount ? totalAmount.toLocaleString('en-IN') : ''}\n` +
+      `📅 *മാസം:* #${currentMonth}\n\n` +
+      `സമ്മാനത്തുക കൈപ്പറ്റുന്നതിനായി ഗ്രൂപ്പ് അഡ്മിനുമായി ഉടൻ ബന്ധപ്പെടുക.\n\n` +
+      `📲 *കുറി പോർട്ടൽ:* ${loginUrl}`;
+  };
+
+  const handleShareToWinnerWhatsApp = () => {
+    if (!winner) return;
+    const text = getWinnerShareText();
+    const cleanPhone = (winner.phone || '').replace(/[^0-9]/g, '');
+    const url = cleanPhone.length >= 10
+      ? `https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleShareToGroupWhatsApp = () => {
+    if (!winner) return;
+    const text = getWinnerShareText();
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
   };
 
   const numSlices = eligibleMembers.length;
@@ -277,14 +309,54 @@ export default function SpinningWheelModal({
                   {t.prizeLabel} <strong className="font-bold">₹{totalAmount?.toLocaleString('en-IN')}</strong>
                 </div>
 
-                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs border border-emerald-500/30">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>
-                    {emailSent
-                      ? `${t.winnerEmailSent} (${winner.email})`
-                      : `#${winner.kuriNumber} ${winner.name}`}
-                  </span>
+                {/* Email Delivery Status or Failure Warning */}
+                {emailSent ? (
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs border border-emerald-500/30">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t.winnerEmailSent} ({winner.email})</span>
+                  </div>
+                ) : (
+                  <div className="mt-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-left">
+                    <div className="font-bold flex items-center gap-1.5 mb-1 text-amber-700 dark:text-amber-300">
+                      <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <span>{t.winnerEmailFailedTitle}</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-amber-700/90 dark:text-amber-300/80">
+                      {emailError || t.winnerEmailFailedDesc}
+                    </p>
+                  </div>
+                )}
+
+                {/* WhatsApp Action Buttons */}
+                <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={handleShareToWinnerWhatsApp}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 active:scale-[0.98]"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{t.shareWinnerWhatsApp}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShareToGroupWhatsApp}
+                    className="py-2.5 px-3 rounded-xl bg-teal-700/80 hover:bg-teal-600 text-white text-xs font-medium transition flex items-center justify-center gap-1.5 border border-teal-500/30"
+                    title={t.shareWinnerWhatsAppGroup}
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>{t.shareWinnerWhatsAppGroup}</span>
+                  </button>
                 </div>
+
+                {/* Done Button */}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-3 w-full py-2 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition"
+                >
+                  {t.doneBtn || 'Done'}
+                </button>
               </motion.div>
             )}
 

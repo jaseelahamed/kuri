@@ -116,8 +116,12 @@ router.post('/execute', protect, async (req, res) => {
       prizeAmount,
     });
 
+    const emailErrorMsg = emailResult.error || emailResult.reason || null;
+
     res.status(200).json({
-      message: `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} (${winner.name}) വിജയിച്ചിരിക്കുന്നു. ഇമെയിൽ അയച്ചു.`,
+      message: emailResult.success
+        ? `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} (${winner.name}) വിജയിച്ചിരിക്കുന്നു. ഇമെയിൽ അയച്ചു.`
+        : `അഭിനന്ദനങ്ങൾ! കുറി നമ്പർ #${winner.kuriNumber} (${winner.name}) വിജയിച്ചിരിക്കുന്നു. (ഇമെയിൽ അയക്കാൻ കഴിഞ്ഞില്ല - WhatsApp വഴി സന്ദേശം അയക്കുക).`,
       winner: {
         _id: winner._id,
         name: winner.name,
@@ -127,6 +131,7 @@ router.post('/execute', protect, async (req, res) => {
       },
       draw,
       emailSent: emailResult.success,
+      emailError: emailErrorMsg,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

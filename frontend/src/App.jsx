@@ -27,7 +27,10 @@ import {
   Search,
   ChevronRight,
   ShieldCheck,
-  Trash2
+  Trash2,
+  MessageCircle,
+  Receipt,
+  Filter
 } from 'lucide-react';
 
 import SpinningWheelModal from './components/SpinningWheelModal';
@@ -36,6 +39,8 @@ import EditMemberModal from './components/EditMemberModal';
 import PaymentModal from './components/PaymentModal';
 import CreateGroupModal from './components/CreateGroupModal';
 import EditGroupModal from './components/EditGroupModal';
+import PaymentConfirmModal from './components/PaymentConfirmModal';
+import PaymentDetailsModal from './components/PaymentDetailsModal';
 import { translations } from './translations';
 import { API_BASE_URL } from './config';
 
@@ -101,6 +106,14 @@ export default function App() {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [selectedPaymentForDetails, setSelectedPaymentForDetails] = useState(null);
+  const [paymentConfirmAction, setPaymentConfirmAction] = useState(null); // { payment, action: 'approve' | 'reject' }
+
+  // Payment filters & search
+  const [paymentMonthFilter, setPaymentMonthFilter] = useState('ALL');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('ALL');
+  const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
 
   // Handle Login / Register
   const handleAuth = async (e) => {
@@ -197,12 +210,16 @@ export default function App() {
     }
   }, [selectedGroup?._id]);
 
-  // Admin Payment Approval / Rejection
-  const handlePaymentStatus = async (paymentId, action) => {
+  // Admin Payment Approval / Rejection with Remarks
+  const handlePaymentStatus = async (paymentId, action, remarks = '') => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/payment/${paymentId}/${action}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ remarks }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -212,7 +229,20 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
+      alert(err.message);
     }
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.toLocaleString(lang === 'ml' ? 'en-IN' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
   const handleDeleteMember = async (member) => {
@@ -239,6 +269,25 @@ export default function App() {
     } catch (err) {
       alert(err.message);
     }
+  };
+
+  const handleShareMemberWinnerWhatsApp = (member) => {
+    if (!member || !selectedGroup) return;
+    const origin = window.location.origin;
+    const text = `🎉 *വിജയി പ്രഖ്യാപനം - കുറി നറുക്കെടുപ്പ്* 🏆\n\n` +
+      `പ്രിയപ്പെട്ട *${member.name}*,\n` +
+      `*"${selectedGroup.name}"* കുറി ഗ്രൂപ്പിന്റെ *മാസം #${member.wonMonth || ''}* ലെ നറുക്കെടുപ്പിൽ താങ്കളുടെ കുറി നമ്പർ വിജയിച്ചിരിക്കുന്നു!\n\n` +
+      `🔢 *കുറി നമ്പർ:* #${member.kuriNumber}\n` +
+      `💰 *സമ്മാനത്തുക:* ₹${selectedGroup.totalAmount ? selectedGroup.totalAmount.toLocaleString('en-IN') : ''}\n\n` +
+      `സമ്മാനത്തുക കൈപ്പറ്റുന്നതിനായി ഗ്രൂപ്പ് അഡ്മിനുമായി ഉടൻ ബന്ധപ്പെടുക.\n\n` +
+      `📲 *കുറി പോർട്ടൽ:* ${origin}`;
+
+    const cleanPhone = (member.phone || '').replace(/[^0-9]/g, '');
+    const url = cleanPhone.length >= 10
+      ? `https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    window.open(url, '_blank');
   };
 
   // Filtered Groups for Directory List
@@ -900,6 +949,16 @@ export default function App() {
 
                             {isAdmin && (
                               <div className="flex items-center gap-1 mt-0.5">
+                                {m.hasWon && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleShareMemberWinnerWhatsApp(m)}
+                                    className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/30 transition"
+                                    title="WhatsApp വഴി അയക്കുക"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => setEditingMember(m)}
@@ -970,6 +1029,16 @@ export default function App() {
                               {isAdmin && (
                                 <td className="px-5 py-3.5 text-right">
                                   <div className="flex items-center justify-end gap-2">
+                                    {m.hasWon && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleShareMemberWinnerWhatsApp(m)}
+                                        className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/30 transition"
+                                        title="WhatsApp വഴി അയക്കുക"
+                                      >
+                                        <MessageCircle className="w-4 h-4" />
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
                                       onClick={() => setEditingMember(m)}
@@ -999,201 +1068,404 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB CONTENT 2: Payments & Admin Approval (Mobile Responsive Cards & Desktop Table) */}
+            {/* TAB CONTENT 2: Payments & Audit Hub (Responsive Filtered Hub & Full History) */}
             {activeTab === 'payments' && (
               <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t.paymentsTitle}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {isAdmin ? t.paymentsAdminSubtitle : t.paymentsMemberSubtitle}
-                    </p>
+                {/* Header & Quick Financial Summary */}
+                <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Receipt className="w-5 h-5 text-indigo-500" />
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.paymentsTitle}</h3>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {isAdmin ? t.paymentsAdminSubtitle : t.paymentsMemberSubtitle}
+                      </p>
+                    </div>
+
+                    {!isAdmin && (
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        className="self-start sm:self-auto py-2 px-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>{t.btnSubmitPayment}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Financial Stats Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">{lang === 'ml' ? 'ആകെ കളക്ഷൻ' : 'Total Approved'}</span>
+                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                        ₹{payments.filter((p) => p.status === 'APPROVED').reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">{lang === 'ml' ? 'കാത്തിരിക്കുന്നവ' : 'Pending Approvals'}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-base font-black text-amber-600 dark:text-amber-400">
+                          {payments.filter((p) => p.status === 'PENDING').length}
+                        </span>
+                        {payments.filter((p) => p.status === 'PENDING').length > 0 && (
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block flex items-center gap-1">
+                        <QrCode className="w-2.5 h-2.5 text-blue-500" />
+                        UPI
+                      </span>
+                      <span className="text-base font-black text-blue-600 dark:text-blue-400">
+                        ₹{payments.filter((p) => p.status === 'APPROVED' && p.paymentMethod === 'UPI').reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block flex items-center gap-1">
+                        <Banknote className="w-2.5 h-2.5 text-amber-500" />
+                        Cash
+                      </span>
+                      <span className="text-base font-black text-amber-600 dark:text-amber-400">
+                        ₹{payments.filter((p) => p.status === 'APPROVED' && p.paymentMethod === 'Cash').reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Multi-Criteria Filters & Search Bar */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {/* Month Filter */}
+                    <select
+                      value={paymentMonthFilter}
+                      onChange={(e) => setPaymentMonthFilter(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="ALL">{t.allMonthsFilter}</option>
+                      {Array.from({ length: selectedGroup?.totalMonths || 12 }, (_, i) => i + 1).map((mNum) => (
+                        <option key={mNum} value={mNum}>
+                          {t.monthNum} #{mNum}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Status Filter */}
+                    <select
+                      value={paymentStatusFilter}
+                      onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="ALL">{t.allStatusFilter}</option>
+                      <option value="PENDING">{t.statusPending}</option>
+                      <option value="APPROVED">{t.statusApproved}</option>
+                      <option value="REJECTED">{t.statusRejected}</option>
+                    </select>
+
+                    {/* Method Filter */}
+                    <select
+                      value={paymentMethodFilter}
+                      onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="ALL">{t.allMethodsFilter}</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Cash">Cash</option>
+                    </select>
+
+                    {/* Search by member name or Kuri # */}
+                    <div className="relative flex-1 min-w-[150px]">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        value={paymentSearchQuery}
+                        onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                        placeholder={t.searchPaymentsPlaceholder}
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {payments.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    {t.noPaymentsYet}
-                  </div>
-                ) : (
-                  <>
-                    {/* MOBILE PAYMENT CARDS (Phone Screens) */}
-                    <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800/60">
-                      {payments.map((p) => (
-                        <div key={p._id} className="p-4 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-bold text-sm text-slate-900 dark:text-white">
-                                {p.memberId?.name}
-                              </span>
-                              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold ml-1.5">
-                                #{p.memberId?.kuriNumber}
-                              </span>
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                              {t.monthNum} #{p.month}
-                            </span>
-                          </div>
+                {/* Payments Content */}
+                {(() => {
+                  const filtered = payments.filter((p) => {
+                    if (paymentMonthFilter !== 'ALL' && p.month !== Number(paymentMonthFilter)) return false;
+                    if (paymentStatusFilter !== 'ALL' && p.status !== paymentStatusFilter) return false;
+                    if (paymentMethodFilter !== 'ALL' && p.paymentMethod !== paymentMethodFilter) return false;
+                    if (paymentSearchQuery.trim()) {
+                      const q = paymentSearchQuery.toLowerCase();
+                      const nameMatch = p.memberId?.name?.toLowerCase().includes(q);
+                      const numMatch = p.memberId?.kuriNumber?.includes(q);
+                      const refMatch = p.transactionRef?.toLowerCase().includes(q);
+                      if (!nameMatch && !numMatch && !refMatch) return false;
+                    }
+                    return true;
+                  });
 
-                          <div className="flex items-center justify-between">
-                            <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                              ₹{p.amount?.toLocaleString('en-IN')}
-                            </div>
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${
-                                p.paymentMethod === 'UPI'
-                                  ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300'
-                                  : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                              }`}
-                            >
-                              {p.paymentMethod === 'UPI' ? <QrCode className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
-                              <span>{p.paymentMethod}</span>
-                            </span>
-                          </div>
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="p-10 text-center space-y-2">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                          <Receipt className="w-6 h-6" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                          {t.noPaymentsYet}
+                        </p>
+                        {(paymentMonthFilter !== 'ALL' || paymentStatusFilter !== 'ALL' || paymentMethodFilter !== 'ALL' || paymentSearchQuery) && (
+                          <button
+                            onClick={() => {
+                              setPaymentMonthFilter('ALL');
+                              setPaymentStatusFilter('ALL');
+                              setPaymentMethodFilter('ALL');
+                              setPaymentSearchQuery('');
+                            }}
+                            className="text-xs text-indigo-600 dark:text-indigo-400 underline font-semibold mt-1"
+                          >
+                            {lang === 'ml' ? 'ഫിൽട്ടർ ഒഴിവാക്കുക' : 'Reset filters'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
 
-                          {p.transactionRef && (
-                            <div className="text-[11px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-lg truncate">
-                              Ref: {p.transactionRef}
-                            </div>
-                          )}
-
-                          <div className="flex items-center justify-between pt-1">
-                            <div>
-                              {p.status === 'APPROVED' && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
-                                  <CheckCircle className="w-3 h-3" />
-                                  <span>{t.statusApproved}</span>
-                                </span>
-                              )}
-                              {p.status === 'PENDING' && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{t.statusPending}</span>
-                                </span>
-                              )}
-                              {p.status === 'REJECTED' && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold">
-                                  <XCircle className="w-3 h-3" />
-                                  <span>{t.statusRejected}</span>
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Mobile Admin Action Buttons */}
-                            {isAdmin && p.status === 'PENDING' && (
+                  return (
+                    <>
+                      {/* MOBILE PAYMENT CARDS */}
+                      <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800/60">
+                        {filtered.map((p) => (
+                          <div key={p._id} className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handlePaymentStatus(p._id, 'approve')}
-                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition"
-                                >
-                                  {t.actionApprove}
-                                </button>
-                                <button
-                                  onClick={() => handlePaymentStatus(p._id, 'reject')}
-                                  className="px-3 py-1.5 rounded-xl bg-rose-100 dark:bg-rose-600/30 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 font-bold text-xs transition"
-                                >
-                                  {t.actionReject}
-                                </button>
+                                <span className="font-bold text-sm text-slate-900 dark:text-white">
+                                  {p.memberId?.name}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-extrabold text-xs">
+                                  #{p.memberId?.kuriNumber}
+                                </span>
+                              </div>
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                {t.monthNum} #{p.month}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                                ₹{p.amount?.toLocaleString('en-IN')}
+                              </div>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${
+                                  p.paymentMethod === 'UPI'
+                                    ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
+                                    : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
+                                }`}
+                              >
+                                {p.paymentMethod === 'UPI' ? <QrCode className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
+                                <span>{p.paymentMethod}</span>
+                              </span>
+                            </div>
+
+                            {/* Timestamps */}
+                            <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 dark:bg-slate-900/40 p-2 rounded-xl">
+                              <div>
+                                <span className="text-slate-400 block">{t.colRequestedAt}:</span>
+                                <span className="text-slate-700 dark:text-slate-300 font-medium">{formatDateTime(p.paidAt)}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 block">{t.colApprovedAt}:</span>
+                                <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                  {p.approvedAt ? formatDateTime(p.approvedAt) : (p.status === 'PENDING' ? '⏳ Pending' : '-')}
+                                </span>
+                              </div>
+                            </div>
+
+                            {p.transactionRef && (
+                              <div className="text-[11px] text-slate-500 font-mono bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-lg truncate">
+                                Ref: {p.transactionRef}
                               </div>
                             )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
 
-                    {/* DESKTOP TABLE VIEW */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">
-                          <tr>
-                            <th className="px-5 py-3">{t.colMemberAndNo}</th>
-                            <th className="px-5 py-3">{t.colMonth}</th>
-                            <th className="px-5 py-3">{t.colAmount}</th>
-                            <th className="px-5 py-3">{t.colMethod}</th>
-                            <th className="px-5 py-3">{t.colRefNotes}</th>
-                            <th className="px-5 py-3">{t.colStatus}</th>
-                            {isAdmin && <th className="px-5 py-3 text-right">{t.colAction}</th>}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
-                          {payments.map((p) => (
-                            <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                              <td className="px-5 py-3.5">
-                                <div className="font-semibold text-slate-900 dark:text-white">{p.memberId?.name}</div>
-                                <div className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">
-                                  #{p.memberId?.kuriNumber}
-                                </div>
-                              </td>
-                              <td className="px-5 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                                {t.monthNum} #{p.month}
-                              </td>
-                              <td className="px-5 py-3.5 text-emerald-600 dark:text-emerald-400 font-bold">
-                                ₹{p.amount?.toLocaleString('en-IN')}
-                              </td>
-                              <td className="px-5 py-3.5">
-                                <span
-                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                                    p.paymentMethod === 'UPI'
-                                      ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
-                                      : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
-                                  }`}
-                                >
-                                  {p.paymentMethod === 'UPI' ? <QrCode className="w-3.5 h-3.5" /> : <Banknote className="w-3.5 h-3.5" />}
-                                  <span>{p.paymentMethod}</span>
-                                </span>
-                              </td>
-                              <td className="px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
-                                {p.transactionRef || p.remarks || '-'}
-                              </td>
-                              <td className="px-5 py-3.5">
+                            {/* Status & Actions */}
+                            <div className="flex items-center justify-between pt-1">
+                              <div>
                                 {p.status === 'APPROVED' && (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
-                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    <CheckCircle className="w-3 h-3" />
                                     <span>{t.statusApproved}</span>
                                   </span>
                                 )}
                                 {p.status === 'PENDING' && (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-                                    <Clock className="w-3.5 h-3.5" />
+                                    <Clock className="w-3 h-3" />
                                     <span>{t.statusPending}</span>
                                   </span>
                                 )}
                                 {p.status === 'REJECTED' && (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold">
-                                    <XCircle className="w-3.5 h-3.5" />
+                                    <XCircle className="w-3 h-3" />
                                     <span>{t.statusRejected}</span>
                                   </span>
                                 )}
-                              </td>
-                              {isAdmin && (
-                                <td className="px-5 py-3.5 text-right">
-                                  {p.status === 'PENDING' ? (
-                                    <div className="flex items-center justify-end gap-2">
-                                      <button
-                                        onClick={() => handlePaymentStatus(p._id, 'approve')}
-                                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
-                                      >
-                                        {t.actionApprove}
-                                      </button>
-                                      <button
-                                        onClick={() => handlePaymentStatus(p._id, 'reject')}
-                                        className="px-3 py-1.5 rounded-lg bg-rose-100 dark:bg-rose-600/30 hover:bg-rose-200 dark:hover:bg-rose-600/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 text-xs font-bold transition"
-                                      >
-                                        {t.actionReject}
-                                      </button>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPaymentForDetails(p)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition flex items-center gap-1"
+                                  title={t.viewDetails}
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-indigo-500" />
+                                  <span>{t.viewDetails}</span>
+                                </button>
+
+                                {isAdmin && p.status === 'PENDING' && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPaymentConfirmAction({ payment: p, action: 'approve' })}
+                                      className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition"
+                                    >
+                                      {t.actionApprove}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPaymentConfirmAction({ payment: p, action: 'reject' })}
+                                      className="px-2.5 py-1.5 rounded-xl bg-rose-100 dark:bg-rose-600/30 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 font-bold text-xs transition"
+                                    >
+                                      {t.actionReject}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* DESKTOP TABLE VIEW */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">
+                            <tr>
+                              <th className="px-5 py-3">{t.colMemberAndNo}</th>
+                              <th className="px-5 py-3">{t.colMonth}</th>
+                              <th className="px-5 py-3">{t.colAmount}</th>
+                              <th className="px-5 py-3">{t.colMethod}</th>
+                              <th className="px-5 py-3">{t.colRequestedAt}</th>
+                              <th className="px-5 py-3">{t.colApprovedAt}</th>
+                              <th className="px-5 py-3">{t.colStatus}</th>
+                              <th className="px-5 py-3 text-right">{t.colAction}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
+                            {filtered.map((p) => (
+                              <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                                <td className="px-5 py-3.5">
+                                  <div className="font-semibold text-slate-900 dark:text-white">{p.memberId?.name}</div>
+                                  <div className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                    #{p.memberId?.kuriNumber}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                                  {t.monthNum} #{p.month}
+                                </td>
+                                <td className="px-5 py-3.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                                  ₹{p.amount?.toLocaleString('en-IN')}
+                                </td>
+                                <td className="px-5 py-3.5">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                                      p.paymentMethod === 'UPI'
+                                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
+                                        : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
+                                    }`}
+                                  >
+                                    {p.paymentMethod === 'UPI' ? <QrCode className="w-3.5 h-3.5" /> : <Banknote className="w-3.5 h-3.5" />}
+                                    <span>{p.paymentMethod}</span>
+                                  </span>
+                                </td>
+                                <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                  {formatDateTime(p.paidAt)}
+                                </td>
+                                <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                  {p.approvedAt ? (
+                                    <div title={p.approvedBy?.name ? `By ${p.approvedBy.name}` : ''}>
+                                      <span>{formatDateTime(p.approvedAt)}</span>
+                                      {p.approvedBy?.name && (
+                                        <span className="block text-[10px] text-slate-400">
+                                          {p.approvedBy.name}
+                                        </span>
+                                      )}
                                     </div>
+                                  ) : p.status === 'PENDING' ? (
+                                    <span className="text-amber-600 dark:text-amber-400 font-semibold">Pending</span>
                                   ) : (
-                                    <span className="text-xs text-slate-400">-</span>
+                                    <span>-</span>
                                   )}
                                 </td>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                                <td className="px-5 py-3.5">
+                                  {p.status === 'APPROVED' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                                      <CheckCircle className="w-3.5 h-3.5" />
+                                      <span>{t.statusApproved}</span>
+                                    </span>
+                                  )}
+                                  {p.status === 'PENDING' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                                      <Clock className="w-3.5 h-3.5" />
+                                      <span>{t.statusPending}</span>
+                                    </span>
+                                  )}
+                                  {p.status === 'REJECTED' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      <span>{t.statusRejected}</span>
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPaymentForDetails(p)}
+                                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+                                      title={t.viewDetails}
+                                    >
+                                      <Eye className="w-4 h-4 text-indigo-500" />
+                                    </button>
+
+                                    {isAdmin && p.status === 'PENDING' && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setPaymentConfirmAction({ payment: p, action: 'approve' })}
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+                                        >
+                                          {t.actionApprove}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setPaymentConfirmAction({ payment: p, action: 'reject' })}
+                                          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-600/30 hover:bg-rose-200 dark:hover:bg-rose-600/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 text-xs font-bold transition"
+                                        >
+                                          {t.actionReject}
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -1370,6 +1642,35 @@ export default function App() {
               members: prev.members.map((m) => (m._id === updatedMember._id ? updatedMember : m)),
             }));
             setEditingMember(null);
+          }}
+        />
+      )}
+
+      {selectedPaymentForDetails && (
+        <PaymentDetailsModal
+          payment={selectedPaymentForDetails}
+          groupName={selectedGroup?.name}
+          isAdmin={isAdmin}
+          lang={lang}
+          onClose={() => setSelectedPaymentForDetails(null)}
+          onTriggerAction={(payment, action) => {
+            setPaymentConfirmAction({ payment, action });
+          }}
+        />
+      )}
+
+      {paymentConfirmAction && (
+        <PaymentConfirmModal
+          payment={paymentConfirmAction.payment}
+          action={paymentConfirmAction.action}
+          groupName={selectedGroup?.name}
+          lang={lang}
+          onClose={() => setPaymentConfirmAction(null)}
+          onConfirm={async (paymentId, action, remarks) => {
+            await handlePaymentStatus(paymentId, action, remarks);
+            if (selectedPaymentForDetails?._id === paymentId) {
+              setSelectedPaymentForDetails(null);
+            }
           }}
         />
       )}

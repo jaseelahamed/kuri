@@ -810,8 +810,16 @@ export default function App() {
                     <span>{t.yourRole}</span>
                     <Users className="w-4 h-4 text-purple-500" />
                   </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
-                    {isAdmin ? t.adminRole : t.memberRole}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
+                      {isAdmin ? t.adminRole : t.memberRole}
+                    </div>
+                    {!isAdmin && groupDetails.members?.find((m) => m.isSelf)?.kuriNumber && groupDetails.members?.find((m) => m.isSelf)?.kuriNumber !== '***' && (
+                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
+                        <span>{lang === 'ml' ? 'നിങ്ങളുടെ കുറി #:' : 'Your Kuri #:'}</span>
+                        <span>#{groupDetails.members.find((m) => m.isSelf).kuriNumber}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-2">
@@ -918,11 +926,24 @@ export default function App() {
                       {groupDetails.members?.map((m) => (
                         <div key={m._id} className="p-4 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <span className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300 font-black text-sm flex items-center justify-center flex-shrink-0">
-                              #{m.kuriNumber}
+                            <span
+                              className={`w-12 h-12 rounded-xl border font-black text-sm flex items-center justify-center flex-shrink-0 ${
+                                isAdmin || m.isSelf
+                                  ? 'bg-indigo-100 dark:bg-indigo-500/20 border-indigo-200 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300'
+                                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 tracking-wider'
+                              }`}
+                            >
+                              {isAdmin || m.isSelf ? `#${m.kuriNumber}` : '#***'}
                             </span>
                             <div>
-                              <div className="font-bold text-sm text-slate-900 dark:text-white">{m.name}</div>
+                              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <span>{m.name}</span>
+                                {m.isSelf && !isAdmin && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                                    {lang === 'ml' ? 'നിങ്ങൾ' : 'You'}
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[11px] text-slate-500 dark:text-slate-400">{m.email}</div>
                               {m.phone && <div className="text-[10px] text-slate-400">{m.phone}</div>}
                             </div>
@@ -999,11 +1020,26 @@ export default function App() {
                           {groupDetails.members?.map((m) => (
                             <tr key={m._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
                               <td className="px-5 py-3.5">
-                                <span className="px-3 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300 font-extrabold text-base tracking-wider">
-                                  #{m.kuriNumber}
+                                <span
+                                  className={`px-3 py-1 rounded-lg border font-extrabold text-base tracking-wider ${
+                                    isAdmin || m.isSelf
+                                      ? 'bg-indigo-100 dark:bg-indigo-500/20 border-indigo-200 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300'
+                                      : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 tracking-widest'
+                                  }`}
+                                >
+                                  {isAdmin || m.isSelf ? `#${m.kuriNumber}` : '#***'}
                                 </span>
                               </td>
-                              <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{m.name}</td>
+                              <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
+                                <div className="flex items-center gap-2">
+                                  <span>{m.name}</span>
+                                  {m.isSelf && !isAdmin && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                                      {lang === 'ml' ? 'നിങ്ങൾ' : 'You'}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
                               <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 text-xs">{m.email}</td>
                               <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs">{m.phone || '-'}</td>
                               <td className="px-5 py-3.5">

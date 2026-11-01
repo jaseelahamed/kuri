@@ -96,17 +96,28 @@ router.get('/:id', protect, async (req, res) => {
     let draws = [];
 
     if (isAdmin) {
-      // Admin sees full draws and winner status
+      // Admin sees full draws and winner status, and all 3-digit kuriNumbers
       draws = await Draw.find({ groupId: group._id })
         .populate('winnerMemberId', 'name email phone kuriNumber')
         .sort({ month: -1 });
     } else {
-      // Confidential: hide winner information and draws tab from regular members
+      // Regular members:
+      // - Confidential: hide winner information and draws tab
+      // - Privacy: Member can ONLY see their own 3-digit kuriNumber; other members' numbers are masked as '***'
       draws = [];
       members = members.map((m) => {
         const obj = m.toObject();
         delete obj.hasWon;
         delete obj.wonMonth;
+
+        const isSelf =
+          (obj.user && req.user._id && obj.user.toString() === req.user._id.toString()) ||
+          (obj.email && req.user.email && obj.email.toLowerCase() === req.user.email.toLowerCase());
+
+        obj.isSelf = isSelf;
+        if (!isSelf) {
+          obj.kuriNumber = '***';
+        }
         return obj;
       });
     }

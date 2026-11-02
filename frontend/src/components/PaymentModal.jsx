@@ -16,7 +16,6 @@ export default function PaymentModal({
   const [month, setMonth] = useState(currentMonth || 1);
   const [amount, setAmount] = useState(monthlyInstallment || 0);
   const [paymentMethod, setPaymentMethod] = useState('UPI');
-  const [transactionRef, setTransactionRef] = useState('');
   const [remarks, setRemarks] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,7 +40,7 @@ export default function PaymentModal({
           month: Number(month),
           amount: Number(amount),
           paymentMethod,
-          transactionRef,
+          transactionRef: '',
           remarks,
         }),
       });
@@ -160,22 +159,6 @@ export default function PaymentModal({
                 </button>
               </div>
             </div>
-
-            {paymentMethod === 'UPI' && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  {t.upiRefLabel}
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={t.upiRefPlaceholder}
-                  value={transactionRef}
-                  onChange={(e) => setTransactionRef(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-teal-500 text-slate-900 dark:text-white placeholder-slate-400"
-                />
-              </div>
-            )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
